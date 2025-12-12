@@ -1,14 +1,26 @@
-# Frontier-CS
+## Frontier-CS: Computer Science Last Exam
+[Website](https://frontier-cs.org) | [GitHub](https://github.com/FrontierCS/Frontier-CS)
 
-Benchmarks for evaluating LLMs on challenging computer science problems.
+![Research Problems](https://img.shields.io/badge/Research_Problems-50-blue) ![Algorithmic Problems](https://img.shields.io/badge/Algorithmic_Problems-107-green)
 
-- **Research Problems** (49): Real-world systems challenges — GPU kernels, distributed scheduling, ML pipelines, security exploits
-- **Algorithmic Problems** (107): Competitive programming challenges — optimization, construction, interactive
 
-## Installation
+**Frontier-CS** is a dataset for evaluating frontier models on challenging computer science problems. From optimizing GPU kernels to solving competitive programming challenges.
+
+Whether you're benchmarking LLM agents, evaluating code generation models, or stress-testing reasoning capabilities, Frontier-CS provides a comprehensive suite of tasks designed for rigorous, practical evaluation.
+
+Frontier-CS consists of two categories:
+
+- **Research Problems**: Real-world systems challenges: GPU kernels, distributed scheduling, ML pipelines, database optimization, and security exploits
+- **Algorithmic Problems**: Competitive programming challenges: optimization, construction, and interactive problems
+
+Frontier-CS is continuously expanding with new and challenging tasks contributed by the community.
+
+## Quickstart
+
+### Installation
 
 ```bash
-git clone https://github.com/xxx/Frontier-CS.git
+git clone https://github.com/FrontierCS/Frontier-CS.git
 cd Frontier-CS
 
 # Install Python dependencies (using uv, recommended)
@@ -18,7 +30,7 @@ uv sync
 pip install -e .
 ```
 
-### API Keys (for LLM evaluation)
+### API Keys
 
 Set environment variables for the models you want to use:
 
@@ -28,90 +40,85 @@ export ANTHROPIC_API_KEY="sk-ant-..." # For Claude models
 export GOOGLE_API_KEY="..."           # For Gemini models
 ```
 
----
+## Core Components
 
-## Repository Structure
+### Research Problems
 
-```
-Frontier-CS/
-├── research/           # Research problems (49 problems)
-│   ├── flash_attn/
-│   ├── gemm_optimization/
-│   ├── cant_be_late/
-│   └── ...
-└── algorithmic/        # Algorithmic problems (107 problems)
-    ├── problems/
-    └── scripts/
-```
+Real-world systems problems requiring domain expertise in areas including operating systems, distributed systems, GPU computing, machine learning, databases, programming languages, and security.
 
----
-
-## Research Problems
-
-Real-world systems problems requiring domain expertise.
-
-### Categories
-
-| Category | Count | Examples |
-|----------|-------|----------|
-| OS / Distributed | 8 | `cant_be_late`, `cant_be_late_multi` |
-| HPC / GPU | 19 | `flash_attn`, `gemm_optimization`, `cross_entropy` |
-| AI / ML | 6 | `imagenet_pareto`, `cloudcast` |
-| Database | 7 | `vdb_pareto`, `llm_sql` |
-| PL | 5 | `symbolic_regression` |
-| Security | 4 | `poc_generation` |
-
-### Quick Start
+**Quick Start:**
 
 ```bash
 cd research
 
-# 1. Generate solutions with an LLM
-python generate_oneshot_gpt.py --model gpt-5
+# Generate solutions with an LLM
+python generate_oneshot_gpt.py --model gpt-4
 
-# 2. Run evaluation locally (requires Docker)
+# Run evaluation locally (requires Docker)
 ./main_loop.sh
 
 # Or run on cloud (requires SkyPilot)
 python scripts/skypilot_per_solution.py --max-concurrent 4
 ```
 
-See [research/CONTRIBUTING.md](research/CONTRIBUTING.md) for detailed usage.
+### Algorithmic Problems
 
----
+Competitive programming problems with automated judging, including optimization tasks, construction challenges, and interactive problems.
 
-## Algorithmic Problems
-
-107 competitive programming problems with automated judging.
-
-### Categories
-
-| Category | Count | Description |
-|----------|-------|-------------|
-| Optimization | 29 | Find optimal solution for given constraints |
-| Construction | 27 | Build a solution satisfying all constraints |
-| Interactive | 51 | Query-response with judge |
-
-### Quick Start
+**Quick Start:**
 
 ```bash
 cd algorithmic
 
-# 1. Start judge server (requires Docker)
+# Start judge server (requires Docker)
 docker-compose up -d
 
-# 2. Run benchmark
-python scripts/run_tests.py claude-opus-4-5
+# Run benchmark
+python scripts/run_tests.py claude-opus-4
 ```
 
 See [algorithmic/README.md](algorithmic/README.md) for details.
 
----
+## Repository Structure
+
+```
+Frontier-CS/
+├── research/           # Research problems
+│   ├── flash_attn/
+│   ├── gemm_optimization/
+│   ├── cant_be_late/
+│   └── ...
+└── algorithmic/        # Algorithmic problems
+    ├── problems/
+    └── scripts/
+```
 
 ## Requirements
 
 - **Python 3.12+**
-- **Docker** (for local evaluation)
-- **GPU** (optional, for GPU problems)
-- **SkyPilot** (optional, for cloud evaluation)
+- **Docker** (for evaluation environments)
+- **GPU** (optional, required for GPU-specific problems)
+- **SkyPilot** (optional, for cloud-based evaluation)
 - **API Keys** (for LLM solution generation)
+
+## Contribution
+
+We welcome contributions! To contribute new tasks:
+
+1. **Fork the repository** and create a new branch
+2. **Add your task** following the structure of existing problems
+3. **Submit a Pull Request** with your task
+
+For problems, please also send **human reference solutions** and **hidden test cases** to [qmang@berkeley.edu](mailto:qmang@berkeley.edu) to ensure evaluation integrity.
+
+For detailed task creation guidelines, see:
+- [CONTRIBUTING.md](CONTRIBUTING.md)
+- [README (Algorithmic).md](algorithmic/README.md)
+
+## Citing Us
+
+If you found Frontier-CS useful, please cite us as:
+
+```bibtex
+
+```

@@ -10,6 +10,7 @@ dist
 .editorconfig
 .DS_Store
 **/*.pyc
+gen.py
 
 
 ################## Berkley Function Call Leaderboard ##########################

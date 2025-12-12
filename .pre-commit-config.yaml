@@ -1,0 +1,13 @@
+# Pre-commit hook configuration
+# Install with: pip install pre-commit && pre-commit install
+
+repos:
+  - repo: local
+    hooks:
+      - id: update-problem-count
+        name: Update Problem Count
+        entry: python3 scripts/update_problem_count.py
+        language: system
+        files: '^(research/|algorithmic/problems/)'
+        pass_filenames: false
+        stages: [commit]
