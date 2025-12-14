@@ -67,7 +67,6 @@ Results saved to `scripts/solutions/`:
 1. Create `problems/{id}/` directory
 2. Add required files:
    - `statement.txt`: Problem description
-   - `tag.txt`: Category (optimization/construction/interactive)
    - `config.yaml`: Limits and test count
    - `testdata/`: Input/output files
    - `chk.cc` or `interactor.cc`: Checker/interactor
