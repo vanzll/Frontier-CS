@@ -49,3 +49,4 @@ berkeley-function-call-leaderboard/**/*.lock
 solutions/
 results/
 generation_logs/
+pairs.txt
