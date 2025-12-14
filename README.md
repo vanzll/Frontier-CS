@@ -116,7 +116,7 @@ results = evaluator.evaluate_batch("research",
 
 ## Submit Your Results
 
-We currently release partial test cases for algorithmic problems to allow users to test and debug their solutions. To submit your solutions for full evaluation and have it included in the leaderboard, please send your solutions to qmang@berkeley.edu or wenhao.chai@princeton.edu following the instructions in [SUBMIT_RESULTS.md](SUBMIT_RESULTS.md).
+We currently release partial test cases for algorithmic problems to allow users to test and debug their solutions. To submit your solutions for full evaluation and have it included in the leaderboard, please send your solutions to qmang@berkeley.edu or wenhao.chai@princeton.edu following the instructions in [SUBMIT.md](SUBMIT.md).
 
 ## Citing Us
 
