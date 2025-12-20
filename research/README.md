@@ -187,100 +187,65 @@ Check each problem's `readme` for the specific `solve()` signature and return ty
 
 ## Generating Solutions with LLMs
 
-Use `generate_solutions.py` to automatically generate solutions using LLMs like GPT-5, Claude, or Gemini.
+Use `generate_solutions.py` to automatically generate solutions using LLMs.
+
+### Quick Start
+
+```bash
+# Generate for one problem with one model
+python research/scripts/generate_solutions.py --problem flash_attn --model gpt-5
+
+# Preview without running (dry run)
+python research/scripts/generate_solutions.py --problem flash_attn --model gpt-5 --dryrun
+```
 
 ### How It Works
 
-The script generates a **Cartesian product** of problems × models:
+The script generates solutions for **all combinations** of problems × models (Cartesian product):
 
-- **Default behavior**: Uses all problems (from `problems.txt`) and all models (from `models.txt`)
-- **Partial specification**: If you specify `--problem` or `--model`, only that dimension is filtered; the other uses all available options
-- **Skips existing**: Already-generated solutions are skipped (use `--force` to regenerate)
-- **Skips failures**: Failed generations are skipped and logged; run again to retry
+| You specify | Problems used | Models used |
+|-------------|---------------|-------------|
+| Nothing | All (from `problems.txt`) | All (from `models.txt`) |
+| `--problem` only | Specified | All (from `models.txt`) |
+| `--model` only | All (from `problems.txt`) | Specified |
+| Both | Specified | Specified |
 
-**Examples:**
+**Behavior:**
+- **Skips existing** solutions (use `--force` to regenerate)
+- **Skips failures** and continues; run again to retry failed ones
+- **Logs** saved to `generation_logs/` for debugging
+
+### Examples
+
 ```bash
-# All problems × all models (from models.txt)
+# All problems × all models
 python research/scripts/generate_solutions.py
 
-# All problems × specific model
+# All problems × one model
 python research/scripts/generate_solutions.py --model gpt-5
 
-# Specific problems × all models
-python research/scripts/generate_solutions.py --problem "flash_attn"
-
-# Specific problems × specific models (Cartesian product)
+# Wildcard problems × multiple models
 python research/scripts/generate_solutions.py --problem "gemm_*" --model gpt-5 claude-sonnet-4-5
-# → generates: gpt5_gemm_squares, gpt5_gemm_rectangles, ..., claude_gemm_squares, ...
-```
+# → gpt5_gemm_squares, gpt5_gemm_rectangles, claude_gemm_squares, ...
 
-### Dry Run
-
-Use `--dryrun` to preview what would be generated without actually calling the API:
-
-```bash
-python research/scripts/generate_solutions.py --problem "cant_be_late*" --model gpt-5 --dryrun
-```
-
-This shows the list of (problem, model) pairs that would be processed.
-
-### Retrying Failed Generations
-
-The script automatically skips failures and continues. To complete all generations:
-
-```bash
-# Run multiple times until all succeed
+# Retry failed generations (just run again)
 python research/scripts/generate_solutions.py --model gpt-5
-python research/scripts/generate_solutions.py --model gpt-5  # retries failed ones
-```
-
-Failed generations are logged in `generation_logs/` for debugging.
-
-### Basic Usage
-
-```bash
-# Generate solution for a single problem
-python research/scripts/generate_solutions.py research/problems/flash_attn --model gpt-5
-
-# Generate solutions for multiple problems using wildcards
-python research/scripts/generate_solutions.py --problem "gemm_*" --model gpt-5
-
-# Use multiple models
-python research/scripts/generate_solutions.py --problem flash_attn --model gpt-5 claude-sonnet-4-5
-
-# Dry run to preview what would be generated
-python research/scripts/generate_solutions.py --problem "cant_be_late*" --model gpt-5 --dryrun
 ```
 
 ### Options
 
 | Option | Description |
 |--------|-------------|
-| `--problem PATTERN` | Problem name pattern (supports wildcards), repeatable |
-| `--problems-file FILE` | File containing problem directories |
-| `--model MODEL [MODEL ...]` | Target model(s), e.g. `gpt-5`, `claude-sonnet-4-5`, `gemini-2.5-pro` |
-| `--models-file FILE` | Newline-delimited model list |
-| `--api-key KEY` | API key (or use env vars like `OPENAI_API_KEY`) |
-| `--timeout SECONDS` | Request timeout (default: 600s) |
-| `--temperature TEMP` | Sampling temperature (default: 0.7) |
-| `--variants N` | Number of solutions per model (default: 1) |
-| `--concurrency N` | Max parallel generations |
+| `--problem PATTERN` | Problem name pattern (wildcards supported), repeatable |
+| `--model MODEL ...` | Model(s) to use, e.g. `gpt-5 claude-sonnet-4-5` |
+| `--dryrun` | Preview what would be generated |
 | `--force` | Regenerate existing solutions |
-| `--dryrun` | Show what would be generated without running |
-
-### Regenerating Existing Solutions
-
-```bash
-# Regenerate specific solutions
-python research/scripts/generate_solutions.py --solution "gpt5_flash*" --model gpt-5
-
-# From a solutions file
-python research/scripts/generate_solutions.py --solutions-file solutions.txt
-```
+| `--variants N` | Generate N solutions per (problem, model) pair |
+| `--concurrency N` | Max parallel API calls |
+| `--timeout SECONDS` | API timeout (default: 600s) |
+| `--temperature TEMP` | Sampling temperature (default: 0.7) |
 
 ### Output
-
-Generated solutions are saved to `solutions/{model}_{problem}/`:
 
 ```
 solutions/
@@ -288,22 +253,17 @@ solutions/
 │   ├── config.yaml
 │   ├── prepare_env.sh
 │   ├── solve.sh
-│   └── resources/
-│       └── solution.py
-└── gpt5_gemm_optimization_squares/
-    └── ...
-```
+│   └── resources/solution.py
+└── ...
 
-Generation logs are saved to `generation_logs/`.
+generation_logs/
+└── gpt5_flash_attn_20241220_123456.log
+```
 
 ### API Keys
 
-Set API keys via environment variables:
-
 ```bash
-export OPENAI_API_KEY=sk-...      # For GPT models
-export ANTHROPIC_API_KEY=sk-...   # For Claude models
-export GOOGLE_API_KEY=...         # For Gemini models
+export OPENAI_API_KEY=sk-...      # GPT models
+export ANTHROPIC_API_KEY=sk-...   # Claude models
+export GOOGLE_API_KEY=...         # Gemini models
 ```
-
-Or use `--api-key` / `--api-key-env` flags.
