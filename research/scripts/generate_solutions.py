@@ -396,15 +396,26 @@ def build_tasks(
             )
     else:
         # Problem list mode
-        variants_file = base_dir / "num_solutions.txt"
-        if args.variants is None:
+        if args.variants is not None:
+            # Explicit count
+            variant_indices = list(range(args.variants))
+        elif args.variants_file is not None:
+            # Explicit file
+            variants_path = Path(args.variants_file)
+            if not variants_path.is_absolute():
+                variants_path = base_dir / variants_path
+            if not variants_path.is_file():
+                print(f"ERROR: Variants file not found: {variants_path}")
+                sys.exit(1)
+            variant_indices = read_variant_indices_file(variants_path)
+        else:
+            # Default: num_solutions.txt
+            variants_file = base_dir / "num_solutions.txt"
             try:
                 variant_indices = read_variant_indices_file(variants_file)
             except Exception as exc:
                 print(f"WARNING: Failed to read {variants_file}: {exc}; defaulting to [0]")
                 variant_indices = [0]
-        else:
-            variant_indices = list(range(args.variants))
 
         for problem_path_real, display_path in normalized_problems:
             if not problem_path_real.is_dir():
@@ -537,7 +548,9 @@ Examples:
     exec_group.add_argument("--force", action="store_true", help="Regenerate existing solutions")
     exec_group.add_argument("--dryrun", action="store_true", help="Show what would be generated")
     exec_group.add_argument("--variants", type=int, default=None,
-                            help="Number of solutions per model")
+                            help="Number of variants per (problem, model)")
+    exec_group.add_argument("--variants-file", default=None,
+                            help="File with variant indices (default: num_solutions.txt)")
     exec_group.add_argument("--concurrency", type=int, default=max(1, min(8, os.cpu_count() or 4)),
                             help="Maximum parallel generations")
 

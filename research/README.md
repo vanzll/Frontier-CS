@@ -187,78 +187,65 @@ Check each problem's `readme` for the specific `solve()` signature and return ty
 
 ## Generating Solutions with LLMs
 
-Use `generate_solutions.py` to automatically generate solutions using LLMs.
-
-### Quick Start
+Use `generate_solutions.py` to generate solutions using LLMs.
 
 ```bash
-# Generate for one problem with one model
+# Generate one solution
+python research/scripts/generate_solutions.py --problem flash_attn --model gpt-5 --variants 1
+
+# Preview what would be generated
+python research/scripts/generate_solutions.py --dryrun
+```
+
+### Two Modes
+
+**Problem mode** (generate new solutions):
+
+```bash
 python research/scripts/generate_solutions.py --problem flash_attn --model gpt-5
-
-# Preview without running (dry run)
-python research/scripts/generate_solutions.py --problem flash_attn --model gpt-5 --dryrun
 ```
 
-### How It Works
+Generates **problems × models × variants** (Cartesian product):
+- Problems: `--problem` patterns or `--problems-file` (default: `problems.txt`)
+- Models: `--model` list or `--models-file` (default: `models.txt`)
+- Variants: `--variants N` (default: from `num_solutions.txt`, currently 5)
 
-The script generates solutions for **all combinations** of problems × models (Cartesian product):
+Solution naming: `{model_prefix}_{problem}` for variant 0, `{model_prefix}_{problem}_{i}` for variant i.
 
-| You specify | Problems used | Models used |
-|-------------|---------------|-------------|
-| Nothing | All (from `problems.txt`) | All (from `models.txt`) |
-| `--problem` only | Specified | All (from `models.txt`) |
-| `--model` only | All (from `problems.txt`) | Specified |
-| Both | Specified | Specified |
-
-**Behavior:**
-- **Skips existing** solutions (use `--force` to regenerate)
-- **Skips failures** and continues; run again to retry failed ones
-- **Logs** saved to `generation_logs/` for debugging
-
-### Examples
+**Solution mode** (regenerate existing solutions):
 
 ```bash
-# All problems × all models (from models.txt)
-python research/scripts/generate_solutions.py
-
-# All problems × one model
-python research/scripts/generate_solutions.py --model gpt-5
-
-# Wildcard problems × multiple models
-python research/scripts/generate_solutions.py --problem "gemm_*" --model gpt-5 claude-sonnet-4-5
-
-# Retry failed generations (just run again)
-python research/scripts/generate_solutions.py --model gpt-5
+python research/scripts/generate_solutions.py --solution "gpt5_flash*" --force
 ```
+
+- Matches existing solutions in `solutions/` by pattern
+- Model inferred from solution name prefix (e.g., `gpt5_` → `gpt-5`)
+- Requires `--force` since solutions already exist
+- Still needs `models.txt` or `--model` to map prefix to model name
 
 ### Options
 
 | Option | Description |
 |--------|-------------|
-| `--problem PATTERN` | Problem name pattern (wildcards supported), repeatable |
-| `--model MODEL...` | Model(s) to use, e.g. `--model gpt-5 claude-sonnet-4-5` |
-| `--models-file FILE` | File with one model per line (alternative to `--model`) |
-| `--dryrun` | Preview what would be generated |
-| `--force` | Regenerate existing solutions |
-| `--variants N` | Generate N solutions per (problem, model) pair |
-| `--concurrency N` | Max parallel API calls |
+| `--problem` / `--problems-file` | Problem pattern or file (default: `problems.txt`) |
+| `--model` / `--models-file` | Model(s) or file (default: `models.txt`) |
+| `--variants` / `--variants-file` | Variant count or file (default: `num_solutions.txt`) |
+| `--solution PATTERN` | Regenerate existing solutions by pattern (mutually exclusive with `--problem`) |
+| `--force` | Overwrite existing solutions |
+| `--dryrun` | Preview without generating |
+| `--concurrency N` | Parallel API calls |
 | `--timeout SECONDS` | API timeout (default: 600s) |
 | `--temperature TEMP` | Sampling temperature (default: 0.7) |
-| `--reasoning-model` | Force reasoning mode (for o1/o3 style models) |
+| `--reasoning-model` | Force reasoning mode (o1/o3 models) |
 
 ### Output
 
 ```
-solutions/
-├── gpt5_flash_attn/
-│   ├── config.yaml
-│   ├── prepare_env.sh
-│   ├── solve.sh
-│   └── resources/solution.py
-└── ...
-
-generation_logs/
-└── gpt5_flash_attn_20241220_123456.log
+solutions/{model_prefix}_{problem}[_{variant}]/
+├── config.yaml
+├── prepare_env.sh
+├── solve.sh
+└── resources/solution.py
 ```
 
 ### API Keys
