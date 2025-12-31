@@ -619,7 +619,9 @@ class SkyPilotRunner(Runner):
                 docker_config.gpu,
                 docker_config.dind,
             )
-            # Sanitize task name (problem_id may contain / for nested problems)
+            # Sanitize task name: problem_id may contain "/" for nested problems
+            # (e.g., "cant_be_late/high_availability_loose_deadline_large_overhead")
+            # SkyPilot task names only allow alphanumeric, underscore, period, dash
             task_name = _sanitize_name(f"eval-{problem_id}")
             task = sky.Task(
                 name=task_name,
