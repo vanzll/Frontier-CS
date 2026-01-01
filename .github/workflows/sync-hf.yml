@@ -1,6 +1,11 @@
 name: Sync to HuggingFace
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - 'algorithmic/problems/**'
+      - 'research/problems/**'
   release:
     types: [published]
   workflow_dispatch:  # Allow manual trigger
