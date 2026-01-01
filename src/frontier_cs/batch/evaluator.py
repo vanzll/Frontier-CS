@@ -95,8 +95,9 @@ class BatchEvaluator:
         self.results_dir = Path(results_dir)
         self.base_dir = base_dir or self._find_base_dir()
         self.backend = backend
-        self.workers = workers
         self.clusters = clusters if clusters is not None else workers  # Default: same as workers
+        # Ensure workers >= clusters to avoid idle clusters
+        self.workers = max(workers, self.clusters)
         self.timeout = timeout
         self.bucket_url = bucket_url
         self.keep_cluster = keep_cluster
