@@ -517,19 +517,23 @@ def run_batch(args: argparse.Namespace) -> int:
 
     # Create batch evaluator
     problems_dir = getattr(args, "problems_dir", None)
-    batch = BatchEvaluator(
+    # Build kwargs, only include timeout if explicitly set (otherwise use BatchEvaluator default)
+    batch_kwargs = dict(
         results_dir=args.results_dir,
         problems_dir=problems_dir,
         backend=backend,
         track=track,
         workers=workers,
         clusters=clusters,
-        timeout=args.timeout,
         bucket_url=bucket_url,
         keep_cluster=keep_cluster,
         idle_timeout=idle_timeout,
         judge_url=judge_url,
     )
+    if args.timeout is not None:
+        batch_kwargs["timeout"] = args.timeout
+
+    batch = BatchEvaluator(**batch_kwargs)
 
     # Handle status command
     if args.status:
