@@ -14,6 +14,7 @@ Supports:
 import hashlib
 import logging
 import queue
+import threading
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
@@ -128,6 +129,9 @@ class BatchEvaluator:
         # For SkyPilot cluster pool
         self._cluster_names: List[str] = []
 
+        # Lock for thread-safe state saving
+        self._state_lock = threading.Lock()
+
     def _find_base_dir(self) -> Path:
         """Find the Frontier-CS base directory."""
         base = Path(__file__).parents[3]
@@ -170,8 +174,9 @@ class BatchEvaluator:
                 )
 
     def _save_state(self) -> None:
-        """Save current state to disk."""
-        self.state.save(self.state_path)
+        """Save current state to disk (thread-safe)."""
+        with self._state_lock:
+            self.state.save(self.state_path)
 
     def _compute_hashes(self, pairs: List[Pair]) -> Dict[str, tuple]:
         """Compute hashes for all pairs for cache invalidation."""

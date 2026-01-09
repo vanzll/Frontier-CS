@@ -8,6 +8,8 @@ Supports hash-based cache invalidation for solutions and problems.
 import hashlib
 import json
 import csv
+import tempfile
+import os
 from dataclasses import dataclass, field, asdict
 from datetime import datetime
 from pathlib import Path
@@ -86,8 +88,10 @@ class PairResult:
 
     @property
     def is_complete(self) -> bool:
-        """Whether this pair has a valid result (success with score)."""
-        return self.status == "success" and self.score is not None
+        """Whether this pair has been evaluated (regardless of success/failure)."""
+        # A pair is "complete" if it has any terminal status, not just success
+        # This prevents automatic re-runs of errors - use --retry-failed for that
+        return self.status in ("success", "error", "timeout", "skipped")
 
     @property
     def is_success(self) -> bool:
@@ -165,6 +169,7 @@ class EvaluationState:
             "results": {
                 pair_id: {
                     "score": r.score,
+                    "score_unbounded": r.score_unbounded,
                     "status": r.status,
                     "message": r.message,
                     "duration_seconds": r.duration_seconds,
@@ -177,8 +182,25 @@ class EvaluationState:
         }
 
         path.parent.mkdir(parents=True, exist_ok=True)
-        with path.open("w", encoding="utf-8") as f:
-            json.dump(data, f, indent=2)
+
+        # Atomic write: write to temp file, then rename
+        # This prevents corruption from concurrent writes or crashes
+        fd, tmp_path = tempfile.mkstemp(
+            dir=path.parent,
+            prefix=".state_tmp_",
+            suffix=".json"
+        )
+        try:
+            with os.fdopen(fd, "w", encoding="utf-8") as f:
+                json.dump(data, f, indent=2)
+            os.replace(tmp_path, path)  # Atomic on POSIX
+        except:
+            # Clean up temp file on error
+            try:
+                os.unlink(tmp_path)
+            except OSError:
+                pass
+            raise
 
     def get_pending_pairs(
         self,
@@ -375,11 +397,20 @@ class EvaluationState:
         Get list of pairs that should be retried.
 
         Includes both explicit failures (error/timeout) AND zero-score successes.
+
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        !!! DO NOT CHANGE THIS LOGIC - IT IS INTENTIONAL !!!
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
         We cannot reliably distinguish between:
         - A solution that legitimately scores 0
         - An evaluator bug that prints "0" before exit(1)
         - Infrastructure issues that cause 0 output
-        So we treat all zero-scores as potential failures worth retrying.
+
+        Retrying zero-score results is the correct approach because:
+        1. A truly zero-score solution will just score 0 again (no harm)
+        2. A flaky failure will get a chance to succeed
+        3. The cost of re-running is low compared to missing valid scores
         """
         return [
             Pair(solution=pair_id.split(":")[0], problem=pair_id.split(":")[1])
