@@ -17,7 +17,7 @@ Evolving Challenges for Evolving Intelligence
   <a href="https://huggingface.co/datasets/FrontierCS/Frontier-CS" target="_blank">
     <img src="https://img.shields.io/badge/Hugging_Face-🤗%20Datasets-orange" alt="Hugging Face">
   </a>
-  <img src="https://img.shields.io/badge/Research_Problems-65-blue" alt="Research Problems">
+  <img src="https://img.shields.io/badge/Research_Problems-66-blue" alt="Research Problems">
   <img src="https://img.shields.io/badge/Algorithmic_Problems-148-green" alt="Algorithmic Problems">
 </p>
 
