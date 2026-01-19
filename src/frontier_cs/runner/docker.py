@@ -67,8 +67,6 @@ class DockerRunner(ResearchRunner):
         self,
         problem_id: str,
         solution_code: str,
-        *,
-        timeout: Optional[int] = None,
     ) -> EvaluationResult:
         """
         Evaluate a solution for a research problem.
@@ -76,7 +74,6 @@ class DockerRunner(ResearchRunner):
         Args:
             problem_id: Problem ID (e.g., "flash_attn", "gemm_optimization/squares")
             solution_code: Python solution code
-            timeout: Optional timeout in seconds
 
         Returns:
             EvaluationResult with score and status
@@ -96,14 +93,13 @@ class DockerRunner(ResearchRunner):
             solution_path = temp_path / "solution.py"
             solution_path.write_text(solution_code, encoding="utf-8")
 
-            return self._run_evaluation(problem_id, problem_path, solution_path, timeout)
+            return self._run_evaluation(problem_id, problem_path, solution_path)
 
     def evaluate_file(
         self,
         problem_id: str,
         solution_path: Path,
         *,
-        timeout: Optional[int] = None,
         solution_id: Optional[str] = None,  # Unused, for API compatibility with SkyPilotRunner
     ) -> EvaluationResult:
         """Evaluate a solution file for a research problem."""
@@ -136,14 +132,13 @@ class DockerRunner(ResearchRunner):
                 message=f"Problem not found: {problem_path}",
             )
 
-        return self._run_evaluation(problem_id, problem_path, solution_path, timeout)
+        return self._run_evaluation(problem_id, problem_path, solution_path)
 
     def _run_evaluation(
         self,
         problem_id: str,
         problem_path: Path,
         solution_path: Path,
-        timeout: Optional[int],
     ) -> EvaluationResult:
         """Run the actual evaluation in Docker."""
         start_time = time.time()
@@ -154,8 +149,8 @@ class DockerRunner(ResearchRunner):
         docker_config = runtime_config.docker
         uv_project = problem_config.dependencies.get("uv_project")
 
-        # Determine timeout
-        effective_timeout = timeout or runtime_config.timeout_seconds or self.DEFAULT_TIMEOUT
+        # Determine timeout from config or default
+        effective_timeout = runtime_config.timeout_seconds or self.DEFAULT_TIMEOUT
 
         # Check GPU requirements
         needs_gpu = docker_config.gpu or runtime_config.requires_gpu or runtime_config.resources.has_gpu

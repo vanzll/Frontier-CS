@@ -93,7 +93,6 @@ class SkyPilotRunner(ResearchRunner):
         problem_id: str,
         solution_code: str,
         *,
-        timeout: Optional[int] = None,
         solution_id: Optional[str] = None,
     ) -> EvaluationResult:
         """
@@ -102,7 +101,6 @@ class SkyPilotRunner(ResearchRunner):
         Args:
             problem_id: Problem ID (e.g., "flash_attn")
             solution_code: Python solution code
-            timeout: Optional timeout in seconds
             solution_id: Optional solution ID for bucket storage (forms pair_id with problem_id)
 
         Returns:
@@ -123,14 +121,13 @@ class SkyPilotRunner(ResearchRunner):
             solution_path = temp_path / "solution.py"
             solution_path.write_text(solution_code, encoding="utf-8")
 
-            return self._run_evaluation(problem_id, problem_path, solution_path, timeout, solution_id)
+            return self._run_evaluation(problem_id, problem_path, solution_path, solution_id)
 
     def evaluate_file(
         self,
         problem_id: str,
         solution_path: Path,
         *,
-        timeout: Optional[int] = None,
         solution_id: Optional[str] = None,
     ) -> EvaluationResult:
         """Evaluate a solution file using SkyPilot."""
@@ -163,14 +160,13 @@ class SkyPilotRunner(ResearchRunner):
                 message=f"Problem not found: {problem_path}",
             )
 
-        return self._run_evaluation(problem_id, problem_path, solution_path, timeout, solution_id)
+        return self._run_evaluation(problem_id, problem_path, solution_path, solution_id)
 
     def _run_evaluation(
         self,
         problem_id: str,
         problem_path: Path,
         solution_path: Path,
-        timeout: Optional[int],
         solution_id: Optional[str] = None,
     ) -> EvaluationResult:
         """Run evaluation on SkyPilot."""
@@ -194,8 +190,8 @@ class SkyPilotRunner(ResearchRunner):
         if not accelerators and runtime_config.requires_gpu:
             accelerators = self.DEFAULT_GPU
 
-        # Determine timeout
-        effective_timeout = timeout or runtime_config.timeout_seconds or self.DEFAULT_TIMEOUT
+        # Determine timeout from config or default
+        effective_timeout = runtime_config.timeout_seconds or self.DEFAULT_TIMEOUT
 
         # Create cluster name with date to avoid conflicts between runs
         date_str = datetime.now().strftime("%m%d%H%M")
@@ -238,6 +234,7 @@ class SkyPilotRunner(ResearchRunner):
                 docker_config.dind,
                 pair_id=pair_id if self.bucket_url else None,
                 uv_project=uv_project,
+                timeout_seconds=effective_timeout,
             )
             task = sky.Task(
                 name=cluster_name,
@@ -372,9 +369,11 @@ class SkyPilotRunner(ResearchRunner):
         dind: bool,
         pair_id: Optional[str] = None,
         uv_project: Optional[str] = None,
+        timeout_seconds: Optional[int] = None,
     ) -> str:
         """Get run script for SkyPilot task."""
         gpu_flags = "--gpus all" if gpu else ""
+        timeout_prefix = f"timeout {timeout_seconds}s " if timeout_seconds else ""
         dind_flags = '-v /var/run/docker.sock:/var/run/docker.sock' if dind else ""
 
         # Build Docker CLI install command for DinD (socket is mounted but CLI needed)
@@ -444,8 +443,8 @@ class SkyPilotRunner(ResearchRunner):
             # Create results directory
             mkdir -p results
 
-            # Run evaluation in Docker
-            docker run --rm {gpu_flags} {dind_flags} \\
+            # Run evaluation in Docker (with timeout if specified)
+            {timeout_prefix}docker run --rm {gpu_flags} {dind_flags} \\
                 -v "$(pwd):/workspace:ro" \\
                 -v "$(pwd)/results:/results" \\
                 -w /work \\
@@ -612,7 +611,6 @@ class SkyPilotRunner(ResearchRunner):
         problem_id: str,
         solution_path: Path,
         *,
-        timeout: Optional[int] = None,
         solution_id: Optional[str] = None,
     ) -> EvaluationResult:
         """
@@ -630,7 +628,6 @@ class SkyPilotRunner(ResearchRunner):
             cluster_name: Name of existing cluster
             problem_id: Problem ID
             solution_path: Path to solution file
-            timeout: Optional timeout in seconds
             solution_id: Optional solution ID
 
         Returns:
@@ -661,6 +658,9 @@ class SkyPilotRunner(ResearchRunner):
         docker_config = runtime_config.docker
         uv_project = problem_config.dependencies.get("uv_project")
 
+        # Determine timeout from config or default
+        effective_timeout = runtime_config.timeout_seconds or self.DEFAULT_TIMEOUT
+
         # Create workspace with file mounts
         with tempfile.TemporaryDirectory(prefix="frontier_exec_") as workspace_dir:
             workspace = Path(workspace_dir)
@@ -673,6 +673,7 @@ class SkyPilotRunner(ResearchRunner):
                 docker_config.gpu,
                 docker_config.dind,
                 uv_project=uv_project,
+                timeout_seconds=effective_timeout,
             )
             # Sanitize task name: problem_id may contain "/" for nested problems
             # (e.g., "cant_be_late/high_availability_loose_deadline_large_overhead")

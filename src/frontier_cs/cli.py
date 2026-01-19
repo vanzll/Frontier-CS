@@ -189,19 +189,9 @@ Examples:
     # Evaluation options
     eval_opts = eval_parser.add_argument_group("Evaluation Options")
     eval_opts.add_argument(
-        "--timeout",
-        type=int,
-        help="Timeout in seconds per problem",
-    )
-    eval_opts.add_argument(
         "--code",
         type=str,
         help="Solution code as string (alternative to file)",
-    )
-    eval_opts.add_argument(
-        "--unbounded",
-        action="store_true",
-        help="Use unbounded score (shows score without clipping)",
     )
 
     # Output options
@@ -324,11 +314,6 @@ Solution files use format: {problem}.{model}.py (e.g., flash_attn.gpt5.py)
         help="Keep SkyPilot cluster running after evaluation (disables autostop)",
     )
     batch_backend.add_argument(
-        "--timeout",
-        type=int,
-        help="Timeout per evaluation in seconds",
-    )
-    batch_backend.add_argument(
         "--bucket-url",
         type=str,
         help="Bucket URL for result storage (s3://... or gs://...). "
@@ -411,12 +396,11 @@ Solution files use format: {problem}.{model}.py (e.g., flash_attn.gpt5.py)
     return parser
 
 
-def print_result(result: EvaluationResult, quiet: bool = False, verbose: bool = False, unbounded: bool = False) -> None:
+def print_result(result: EvaluationResult, quiet: bool = False, verbose: bool = False) -> None:
     """Print evaluation result."""
     if quiet:
         if result.success:
-            score = result.score_unbounded if unbounded and hasattr(result, 'score_unbounded') else result.score
-            print(f"{result.problem_id}: {score}")
+            print(f"{result.problem_id}: {result.score}")
         else:
             print(f"{result.problem_id}: ERROR")
         return
@@ -426,11 +410,9 @@ def print_result(result: EvaluationResult, quiet: bool = False, verbose: bool = 
     print(f"Status: {result.status.value}")
 
     if result.success:
-        if unbounded and hasattr(result, 'score_unbounded'):
+        print(f"Score: {result.score}")
+        if result.score_unbounded is not None and result.score_unbounded != result.score:
             print(f"Score (unbounded): {result.score_unbounded}")
-            print(f"Score (bounded): {result.score}")
-        else:
-            print(f"Score: {result.score}")
     else:
         print(f"Message: {result.message}")
 
@@ -443,7 +425,7 @@ def print_result(result: EvaluationResult, quiet: bool = False, verbose: bool = 
     print("=" * 60)
 
 
-def print_results_json(results: List[EvaluationResult], unbounded: bool = False) -> None:
+def print_results_json(results: List[EvaluationResult]) -> None:
     """Print results as JSON."""
     import json
 
@@ -452,12 +434,11 @@ def print_results_json(results: List[EvaluationResult], unbounded: bool = False)
         item = {
             "problem_id": r.problem_id,
             "score": r.score,
+            "score_unbounded": r.score_unbounded,
             "status": r.status.value,
             "message": r.message,
             "duration_seconds": r.duration_seconds,
         }
-        if unbounded and hasattr(r, 'score_unbounded'):
-            item["score_unbounded"] = r.score_unbounded
         data.append(item)
     print(json.dumps(data, indent=2))
 
@@ -530,8 +511,6 @@ def run_batch(args: argparse.Namespace) -> int:
         idle_timeout=idle_timeout,
         judge_url=judge_url,
     )
-    if args.timeout is not None:
-        batch_kwargs["timeout"] = args.timeout
 
     batch = BatchEvaluator(**batch_kwargs)
 
@@ -825,19 +804,18 @@ def run_eval(args: argparse.Namespace) -> int:
         if not args.quiet:
             print(f"Evaluating {pid}...", end=" ", flush=True)
 
-        result = evaluator.evaluate(track, pid, code, timeout=args.timeout, unbounded=args.unbounded)
+        result = evaluator.evaluate(track, pid, code)
         results.append(result)
 
         if not args.quiet:
             if result.success:
-                score = result.score_unbounded if args.unbounded and hasattr(result, 'score_unbounded') else result.score
-                print(f"Score: {score}")
+                print(f"Score: {result.score}")
             else:
                 print(f"ERROR: {result.message}")
 
     # Output results
     if args.json:
-        print_results_json(results, unbounded=args.unbounded)
+        print_results_json(results)
     elif not args.quiet:
         print(f"\n{'='*60}")
         print("Summary")
@@ -851,12 +829,8 @@ def run_eval(args: argparse.Namespace) -> int:
         print(f"Failed: {len(failed)}")
 
         if successful:
-            if args.unbounded and all(hasattr(r, 'score_unbounded') for r in successful):
-                avg_score = sum(r.score_unbounded for r in successful) / len(successful)
-                print(f"Average Score (unbounded): {avg_score:.2f}")
-            else:
-                avg_score = sum(r.score for r in successful) / len(successful)
-                print(f"Average Score: {avg_score:.2f}")
+            avg_score = sum(r.score for r in successful) / len(successful)
+            print(f"Average Score: {avg_score:.2f}")
 
         if failed and args.verbose:
             print("\nFailed problems:")
