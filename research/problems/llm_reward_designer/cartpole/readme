@@ -1,0 +1,17 @@
+LLM as Reward Designer - CartPole
+=================================
+
+Environment: CartPole-v1
+------------------------
+A pole is attached by an un-actuated joint to a cart, which moves along a frictionless track. The system is controlled by applying a force of +1 or -1 to the cart.
+
+Dynamics (Implicit)
+-------------------
+You can infer the dynamics from the standard physics of a pendulum on a cart.
+State: `[x, x_dot, theta, theta_dot]`
+Action: `0` (Left), `1` (Right)
+
+Goal
+----
+Design a `reward_function(state, action, next_state, done)` to help PPO learn to keep the pole upright.
+Ground Truth Reward: +1 for every step the pole remains upright.

@@ -1,0 +1,36 @@
+LLM as Reward Designer - LunarLander (Simplified)
+===================================================
+
+Environment: LunarLander-Custom-v0
+----------------------------------
+A simplified version of the classic Lunar Lander game.
+Control a lander to descend safely onto the landing pad at coordinates (0,0).
+
+Dynamics (Implicit)
+-------------------
+State (8D):
+0. `x`: Horizontal position (Goal is 0)
+1. `y`: Vertical position (Starts high, Ground is 0)
+2. `vx`: Horizontal velocity
+3. `vy`: Vertical velocity
+4. `theta`: Angle (radians, 0 is upright)
+5. `vtheta`: Angular velocity
+6. `left_leg`: 0 (Not simulated in simple version)
+7. `right_leg`: 0 (Not simulated in simple version)
+
+Action (Discrete 4):
+0: Do nothing
+1: Fire left engine (pushes lander to the right)
+2: Fire main engine (pushes lander upwards)
+3: Fire right engine (pushes lander to the left)
+
+Goal
+----
+Design a `reward_function` to help PPO learn to land safely.
+Ground Truth Reward:
+- **+100** for safe landing (upright, slow speed, near center).
+- **-100** for crash.
+- Small penalty for fuel usage.
+
+This is a classic Reward Shaping problem. The sparse +100/-100 signal is hard to learn directly. You need to provide dense feedback (e.g., reward getting closer to (0,0), penalize tilting).
+

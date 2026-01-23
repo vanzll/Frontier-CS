@@ -1,0 +1,17 @@
+LLM as Reward Designer - Acrobot
+================================
+
+Environment: Acrobot-v1
+-----------------------
+The acrobot system includes two joints and two links, where the joint between the two links is actuated. Initially, the links are hanging downwards, and the goal is to swing the end of the lower link up to a given height.
+
+Dynamics (Implicit)
+-------------------
+State: `[cos(t1), sin(t1), cos(t2), sin(t2), dt1, dt2]` (6 dimensions)
+Action: `0` (Torque -1), `1` (Torque 0), `2` (Torque +1)
+
+Goal
+----
+Design a `reward_function` to help PPO learn to swing up.
+Ground Truth Reward: -1 for every step until the goal is reached.
+
