@@ -1,0 +1,207 @@
+Agentic RL Algorithm Discovery
+==============================
+
+Problem Description
+-------------------
+
+You are given the verl-agent framework for training LLM agents with reinforcement
+learning. Your task is to **design a complete RL training algorithm** by implementing
+three core components:
+
+1. **Advantage Computation**: How to estimate the "advantage" of actions
+2. **Policy Loss Function**: How to compute gradients for policy updates
+3. **Reward Assignment**: How to distribute episode rewards to individual steps
+
+Your algorithm will train a Qwen-1.5B-Instruct model on ALFWorld, a text-based
+embodied AI environment where an agent must complete household tasks (e.g.,
+"put a clean apple in the fridge") in up to 50 steps.
+
+---
+
+API Specification
+-----------------
+
+Implement a `Solution` class with three methods:
+
+```python
+from typing import Tuple, Dict, Any, Optional
+import torch
+import numpy as np
+from collections import defaultdict
+
+class Solution:
+    def solve(self, spec_path: str = None) -> "Solution":
+        """
+        Initialize the algorithm. Called once before training.
+
+        Set hyperparameters in self.config:
+            self.config = {
+                "gamma": 0.95,           # Discount factor
+                "clip_ratio": 0.2,       # PPO clip range
+                "use_kl_loss": False,    # Add KL penalty
+                "kl_loss_coef": 0.01,    # KL penalty coefficient
+            }
+
+        Returns: self
+        """
+        self.config = {}
+        return self
+
+    def compute_advantage(
+        self,
+        token_level_rewards: torch.Tensor,   # (batch, seq_len)
+        response_mask: torch.Tensor,          # (batch, seq_len)
+        episode_index: np.ndarray,            # (batch,) - episode group IDs
+        trajectory_index: np.ndarray,         # (batch,) - trajectory IDs within group
+        step_rewards: Optional[torch.Tensor] = None,
+        anchor_observations: Optional[np.ndarray] = None,
+        gamma: float = 0.95,
+        **kwargs
+    ) -> Tuple[torch.Tensor, torch.Tensor]:
+        """
+        Compute advantages and returns for policy update.
+
+        Args:
+            token_level_rewards: Sparse rewards at token level (usually only at EOS)
+            response_mask: Binary mask for valid response tokens
+            episode_index: Groups trajectories from same initial state
+            trajectory_index: Identifies trajectory within episode group
+            step_rewards: Per-step reward signal (from assign_step_rewards)
+            anchor_observations: Pure state representations (for step-level grouping)
+            gamma: Discount factor
+
+        Returns:
+            advantages: (batch, seq_len) - advantage estimates
+            returns: (batch, seq_len) - return estimates
+        """
+        raise NotImplementedError
+
+    def compute_policy_loss(
+        self,
+        old_log_prob: torch.Tensor,
+        log_prob: torch.Tensor,
+        advantages: torch.Tensor,
+        response_mask: torch.Tensor,
+        clip_ratio: float = 0.2,
+        **kwargs
+    ) -> Tuple[torch.Tensor, Dict[str, Any]]:
+        """
+        Compute policy gradient loss.
+
+        Args:
+            old_log_prob: Log probabilities from behavior policy
+            log_prob: Log probabilities from current policy
+            advantages: Advantage estimates from compute_advantage
+            response_mask: Mask for valid tokens
+            clip_ratio: PPO-style clipping parameter
+
+        Returns:
+            loss: Scalar loss value
+            metrics: Dict with logging info (e.g., {"clip_frac": 0.1})
+        """
+        raise NotImplementedError
+
+    def assign_step_rewards(
+        self,
+        episode_reward: float,
+        trajectory_length: int,
+        step_observations: list,
+        step_actions: list,
+        **kwargs
+    ) -> np.ndarray:
+        """
+        Distribute episode reward to individual steps.
+
+        Args:
+            episode_reward: Final episode reward (0 or 1 for ALFWorld)
+            trajectory_length: Number of steps taken
+            step_observations: Text observations at each step
+            step_actions: Actions taken at each step
+
+        Returns:
+            step_rewards: (trajectory_length,) - reward for each step
+        """
+        raise NotImplementedError
+```
+
+Available Imports
+-----------------
+
+```python
+import torch
+import numpy as np
+from collections import defaultdict
+from typing import Tuple, Dict, Any, Optional, List
+
+# verl utilities (optional)
+from verl.utils.torch_functional import masked_mean, masked_whiten, entropy_from_logits
+```
+
+---
+
+Evaluation
+----------
+
+- Your algorithm trains the model for 150 epochs (verl-agent standard)
+- The trained agent is evaluated on 128 held-out ALFWorld tasks
+- Score = Success Rate × 100 (0-100 scale)
+
+Training Configuration (Fixed):
+- Model: Qwen/Qwen2.5-1.5B-Instruct
+- Learning rate: 1e-6
+- Batch size: 16 episodes, 8 trajectories per prompt (group_size)
+- Max episode steps: 50
+- GPUs: 2 per node
+- Evaluation frequency: every 5 epochs
+
+---
+
+Known Baselines
+---------------
+
+| Algorithm | Success Rate | Reference |
+|-----------|-------------|-----------|
+| Random    | ~5%         | -         |
+| GRPO      | ~70%        | DeepSeek-R1 paper |
+| GiGPO     | ~86%        | verl-agent paper |
+
+---
+
+Scoring (0-100)
+---------------
+
+```
+score = success_rate * 100
+```
+
+Where success_rate is the fraction of test tasks completed successfully [0, 1].
+
+For ELO ranking (unbounded score):
+```
+unbounded_score = success_rate * 100 + efficiency_bonus
+efficiency_bonus = max(0, (1 - epochs_to_converge / 150) * 20)
+```
+
+Your program has a total time limit of 6 hours (21600 seconds).
+
+---
+
+Implementation Notes
+--------------------
+
+**Required Elements:**
+- `Solution` class must be defined
+- `solve()` must return `self`
+- All three methods must be implemented
+- Use `self.config` to set hyperparameters
+
+**Tips:**
+- GRPO normalizes rewards within episode groups
+- GiGPO adds step-level grouping via anchor observations
+- Consider both episode-level and step-level credit assignment
+- The loss function should use PPO-style clipping for stability
+
+**Algorithm Space to Explore:**
+1. Advantage estimation: group normalization, GAE, RLOO, etc.
+2. Loss functions: PPO clip, GSPO sequence-level, etc.
+3. Reward assignment: sparse, dense, shaped rewards

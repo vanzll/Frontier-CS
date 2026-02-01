@@ -257,6 +257,8 @@ class DockerRunner(ResearchRunner):
         # GPU flags
         if needs_gpu:
             cmd.extend(["--gpus", "all"])
+            # NCCL requires larger shared memory for multi-GPU training
+            cmd.extend(["--ipc=host", "--shm-size=16g"])
 
         # Docker-in-Docker flags
         if docker_config.dind:
@@ -283,15 +285,40 @@ class DockerRunner(ResearchRunner):
         if timeout:
             cmd = ["timeout", "--foreground", f"{timeout}s"] + cmd
 
-        # Execute
-        result = subprocess.run(
+        # Execute with streaming output
+        process = subprocess.Popen(
             cmd,
-            capture_output=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,  # Merge stderr into stdout
             text=True,
+            bufsize=1,  # Line buffered
         )
 
-        logs = result.stdout + "\n" + result.stderr
-        return result, logs
+        logs = []
+        try:
+            # Stream output
+            for line in process.stdout:
+                print(line, end="", flush=True)
+                logs.append(line)
+            
+            # Wait for completion
+            returncode = process.wait()
+            
+        except KeyboardInterrupt:
+            process.kill()
+            raise
+
+        full_logs = "".join(logs)
+        
+        # Create a mock CompletedProcess result
+        result = subprocess.CompletedProcess(
+            args=cmd,
+            returncode=returncode,
+            stdout=full_logs,
+            stderr="",
+        )
+        
+        return result, full_logs
 
     def _get_run_script(self, uv_project: Optional[str] = None, dind: bool = False) -> str:
         """Get the bash script to run inside Docker."""

@@ -1,0 +1,10 @@
+tag: ml_systems
+
+runtime:
+  environment: "Python 3.10, PyTorch 2.6, vLLM 0.8.3, flash_attn 2.7.4, verl-agent with ALFWorld"
+  docker:
+    image: carlos3386/verl-agent:v2
+    # Note: If push fails, use local image: carlos3386/verl-agent:v2
+    gpu: true
+    dind: false
+  timeout_seconds: 21600  # 6 hours (training + evaluation buffer)

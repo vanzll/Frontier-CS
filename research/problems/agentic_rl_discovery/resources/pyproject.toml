@@ -1,0 +1,19 @@
+[project]
+name = "agentic-rl-discovery"
+version = "0.1.0"
+description = "Agentic RL Algorithm Discovery problem for Frontier-CS"
+requires-python = ">=3.10"
+dependencies = [
+    "alfworld",
+    "textworld",
+    "gymnasium>=0.29.0",
+]
+
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+# Don't include any Python packages - this is a dependency-only meta-package
+py-modules = []
+packages = []

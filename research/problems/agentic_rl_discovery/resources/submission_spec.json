@@ -1,0 +1,117 @@
+{
+  "problem_name": "Agentic RL Algorithm Discovery",
+  "version": "1.0",
+  "description": "Design a complete RL algorithm for training LLM agents on ALFWorld",
+  "solution_class": "Solution",
+  "required_methods": [
+    {
+      "name": "solve",
+      "signature": "solve(self, spec_path: str = None) -> Solution",
+      "description": "Initialize the algorithm. Set hyperparameters in self.config. Return self.",
+      "returns": "self"
+    },
+    {
+      "name": "compute_advantage",
+      "signature": "compute_advantage(self, token_level_rewards, response_mask, episode_index, trajectory_index, step_rewards=None, anchor_observations=None, gamma=0.95, **kwargs) -> Tuple[Tensor, Tensor]",
+      "description": "Compute advantages and returns for policy update",
+      "args": {
+        "token_level_rewards": "(batch, seq_len) torch.Tensor - sparse rewards at token level",
+        "response_mask": "(batch, seq_len) torch.Tensor - valid token mask",
+        "episode_index": "(batch,) np.ndarray - episode group IDs",
+        "trajectory_index": "(batch,) np.ndarray - trajectory IDs within group",
+        "step_rewards": "(batch,) torch.Tensor optional - per-step rewards",
+        "anchor_observations": "(batch,) np.ndarray optional - state representations",
+        "gamma": "float - discount factor"
+      },
+      "returns": "Tuple of (advantages, returns) both (batch, seq_len) Tensors"
+    },
+    {
+      "name": "compute_policy_loss",
+      "signature": "compute_policy_loss(self, old_log_prob, log_prob, advantages, response_mask, clip_ratio=0.2, **kwargs) -> Tuple[Tensor, Dict]",
+      "description": "Compute policy gradient loss",
+      "args": {
+        "old_log_prob": "(batch, seq_len) torch.Tensor - log probs from behavior policy",
+        "log_prob": "(batch, seq_len) torch.Tensor - log probs from current policy",
+        "advantages": "(batch, seq_len) torch.Tensor - advantage estimates",
+        "response_mask": "(batch, seq_len) torch.Tensor - valid token mask",
+        "clip_ratio": "float - PPO clip parameter"
+      },
+      "returns": "Tuple of (loss: Tensor, metrics: Dict[str, Any])"
+    },
+    {
+      "name": "assign_step_rewards",
+      "signature": "assign_step_rewards(self, episode_reward, trajectory_length, step_observations, step_actions, **kwargs) -> np.ndarray",
+      "description": "Distribute episode reward to individual steps",
+      "args": {
+        "episode_reward": "float - final episode reward (0 or 1)",
+        "trajectory_length": "int - number of steps",
+        "step_observations": "list - observations at each step",
+        "step_actions": "list - actions at each step"
+      },
+      "returns": "np.ndarray of shape (trajectory_length,)"
+    }
+  ],
+  "config_options": {
+    "gamma": {
+      "type": "float",
+      "default": 0.95,
+      "description": "Discount factor for returns"
+    },
+    "clip_ratio": {
+      "type": "float",
+      "default": 0.2,
+      "description": "PPO clip range"
+    },
+    "use_kl_loss": {
+      "type": "bool",
+      "default": false,
+      "description": "Whether to add KL penalty to loss"
+    },
+    "kl_loss_coef": {
+      "type": "float",
+      "default": 0.01,
+      "description": "KL penalty coefficient"
+    },
+    "entropy_coef": {
+      "type": "float",
+      "default": 0.0,
+      "description": "Entropy bonus coefficient"
+    }
+  },
+  "available_imports": [
+    "torch",
+    "numpy",
+    "collections.defaultdict",
+    "typing.Tuple",
+    "typing.Dict",
+    "typing.Any",
+    "typing.Optional",
+    "typing.List",
+    "verl.utils.torch_functional.masked_mean",
+    "verl.utils.torch_functional.masked_whiten",
+    "verl.utils.torch_functional.entropy_from_logits"
+  ],
+  "evaluation": {
+    "environment": "ALFWorld",
+    "model": "Qwen/Qwen2.5-1.5B-Instruct",
+    "epochs": 150,
+    "test_tasks": 128,
+    "scoring": "success_rate * 100"
+  },
+  "baselines": {
+    "random": {
+      "success_rate": 0.05,
+      "score": 5
+    },
+    "grpo": {
+      "success_rate": 0.70,
+      "score": 70,
+      "file": "baseline_grpo.py"
+    },
+    "gigpo": {
+      "success_rate": 0.86,
+      "score": 86,
+      "file": "baseline_gigpo.py"
+    }
+  }
+}
