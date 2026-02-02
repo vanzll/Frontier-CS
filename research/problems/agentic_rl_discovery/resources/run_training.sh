@@ -45,7 +45,7 @@ python3 -m examples.data_preprocess.prepare \
 # Configuration matches verl-agent/examples/grpo_trainer/run_alfworld.sh exactly,
 # except algorithm.adv_estimator=custom for user-defined advantage calculation.
 micro_batch_size_per_gpu=8 # original: 32
-model_name="Qwen/Qwen2.5-0.5B-Instruct"
+model_name="Qwen/Qwen2.5-1.5B-Instruct"
 log_prob_micro_batch_size_per_gpu=8 # original: 32
 ref_log_prob_micro_batch_size_per_gpu=8 # original: 32
 

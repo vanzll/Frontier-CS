@@ -15,6 +15,10 @@ VERL_AGENT_DIR="${RESOURCES_DIR}/verl-agent"
 # Set up Python path - include verl-agent and resources
 export PYTHONPATH="${VERL_AGENT_DIR}:${RESOURCES_DIR}:${PYTHONPATH:-}"
 
+# Run environment setup (installs verl-agent, downloads ALFWorld data)
+echo "Running environment setup..."
+source "${SCRIPT_DIR}/set_up_env.sh"
+
 # Find solution file (Frontier-CS Docker framework puts it here)
 EXEC_ROOT="/work/execution_env"
 if [[ -f "${EXEC_ROOT}/solution_env/solution.py" ]]; then

@@ -7,4 +7,4 @@ runtime:
     # Note: If push fails, use local image: carlos3386/verl-agent:v2
     gpu: true
     dind: false
-  timeout_seconds: 172800  # 6 hours (training + evaluation buffer)
+  timeout_seconds: 172800  # 48 hours (training + evaluation buffer)
