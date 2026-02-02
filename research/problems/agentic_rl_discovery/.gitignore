@@ -1,0 +1,16 @@
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Test files
+test_run.sh
+test_run.log
+
+# Training outputs
+resources/verl-agent/outputs/
+resources/verl-agent/wandb/
+
+# Environment files
+*.egg-info/
+.eggs/
