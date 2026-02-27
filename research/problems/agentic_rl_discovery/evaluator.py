@@ -48,7 +48,6 @@ def run_training(solution_path: str, resources_dir: Path) -> dict:
             env=env,
             capture_output=True,
             text=True,
-            timeout=21000  # ~5.8 hours, leave buffer for evaluation
         )
         print(result.stdout)
         if result.returncode != 0:
