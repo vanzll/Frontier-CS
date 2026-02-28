@@ -50,8 +50,13 @@ def run_training(solution_path: str, resources_dir: Path) -> dict:
             text=True,
         )
         print(result.stdout)
+        # Always print stderr so we can see errors/warnings from training
+        if result.stderr:
+            print("=== Training stderr ===")
+            print(result.stderr)
+            print("=== End stderr ===")
         if result.returncode != 0:
-            print(f"Training failed: {result.stderr}", file=sys.stderr)
+            print(f"Training failed with return code: {result.returncode}")
             return {"success_rate": 0.0, "error": result.stderr}
     else:
         # Fallback: run verl-agent directly
